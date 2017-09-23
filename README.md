@@ -1,3 +1,12 @@
+App developed for Hackzurich 2017 composed of:
+- Backend (Node + python for data fetching from Tomson Reuters API)
+- Frontend (jQuery + D3JS)
+- Private blockchain with Etherum smart concract ("Charitycoin")
+
+The idea was to offer a blockchain solution to the lack of transparency in online donations.
+
+Developer with the awesome help of my team mates (Klemen, Viton and Nina)
+
 # RUN private Blockchain
 
 ## Install etherum 
