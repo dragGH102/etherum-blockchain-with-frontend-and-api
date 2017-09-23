@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>HackZurich2017</title>
+
+  <!-- Jquery -->
+  <script src="jquery-3.2.1.min.js"></script>
+
+  <!-- Bootstrap -->
+  <script src="bootstrap.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="bootstrap.min.css">
+  <link rel="stylesheet" type="text/css" href="index.css">
+</head>
+
+<body>
+  <div class="container border-top border-bottom">
+    <div class="row">
+      <div class="col-md-6 padding-top" style="height: 100%;">
+        <!-- MAP -->
+        <div id="globe" class="centered">
+
+        </div>
+      </div>
+      <div class="col-md-4" style="height: 100%;">
+        <div class="row padding-top" style="height: 50%;">
+          <!-- FORM -->
+          <div class="form centered">
+            <h4>DONATE</h4>
+            <div>
+              <div><input type="text" value="100" class="amount">&nbsp;CHF</div>
+              <select class="charities" onchange="onCharitySelect()">
+                <!-- INITIALLY EMPTY -->
+                <option disabled selected value>choose</option>
+              </select>
+              <button type="button" onclick="sendMoney()" class="btn btn-default btn-lg">
+                <span class="glyphicon glyphicon-star" aria-hidden="true"></span> DONATE
+              </button>
+          </div>
+          </div>
+        </div>
+        <div class="row padding-top border-top" style="height: 50%;">
+          <!-- NEWS FOR CHARITY -->
+          <div class="centered">
+            <h4>NEWS</h4>
+            <ul class="news">
+              <!-- INITIALLY EMPTY -->
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2" style="height: 100%;">
+        <div class="row padding-top" style="height: 70%;">
+          <!-- CAUSES -->
+          <div class="centered">
+            <h4>CAUSES</h4>
+            <select class="causes" onchange="onCauseSelect()">
+              <!-- INITIALLY EMPTY -->
+              <option disabled selected value>choose</option>
+            </select>
+          </div>
+        </div>
+        <div class="row padding-top border-top" style="height: 30%;">
+          <!-- TRANSACTION LIST -->
+          <div class="centered">
+            <h4>TRANSACTION LIST</h4>
+            <ul class="transactions">
+              <!-- initially empty -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- d3js (globe) -->
+  <script src="d3.v3.min.js"></script>
+  <script src="queue.v1.min.js"></script>
+  <script src="topojson.v0.min.js"></script>
+  <script src="globeHackZurich.js"></script>
+  <!-- app logic -->
+  <script>
+    const apiUrl = `http://127.0.0.1:8080`;
+    let bcEntities = [];
+    let pollingInterval = setInterval(() => {
+        // monitor for transations 
+        $.get(`${apiUrl}/api/transactions`, response => {
+          if (response[0]) $('.transactions').html(`<li>${response[0]}</li>`);
+          else $('.transactions').html('');
+        });
+    }, 1000);
+
+    /*
+     * UTILITY
+     */
+    const mapNameToAddress = (charity) => {
+      return bcEntities.find(entity => entity.name === charity).address;
+    }
+    const getCharity = () => $('.charities').find('option:selected').text();
+
+    const getCause = () => $('.causes').find('option:selected').text();
+
+    /*
+     * DOM events
+     */
+    // initiate transaction
+    const sendMoney = () => {
+      const charity = getCharity();
+      const to = mapNameToAddress(charity);
+      const amount = $('.amount').val();
+
+      // draw new line on d3js visualization
+      // we fake it here for the sake of visualization
+      drawRedLine(0);
+
+      $.post(`${apiUrl}/api/charity/donation`, { to, amount }, () => {
+        // no data returned
+        console.log('success');
+      });
+    };
+
+    // list charity-related news
+    const onCharitySelect = () => {
+      const charity = getCharity();
+
+      $.get(`${apiUrl}/api/data/tag?charity=${charity}`, data => {
+        $('.news').html('');
+        data = data.slice(0, 5)
+        data.forEach(item => {
+          $('.news').append(`<li>${item.text.substr(0, 35)}...}</li>`);
+        })
+      });
+    };
+
+    // list cause-related charities
+    const onCauseSelect = () => {
+      const cause = getCause();
+
+      $.get(`${apiUrl}/api/data/tag?cause=${cause}`, response => {
+        $('.charities').html('');
+        response.forEach(i => {
+          i.data.forEach(item => {
+            $('.charities').append(`<option value="${item}">${item}</option>`);
+          })
+        })
+      });
+    };
+
+    /*
+    * INIT
+    */
+
+    // fetch data about Blockchain nodes
+    $.get(`${apiUrl}/api/entity`, data => {
+      bcEntities = data;
+    });
+
+    // fetch causes list
+    $.get(`${apiUrl}/api/data/tag`, data => {
+      bcEntities = data;
+      
+      data.forEach(item => {
+        $('.causes').append(`<option value="${item._id}">${item._id}</option>`);
+      })
+    });
+  </script>
+
+  <!-- livereload -->
+  <script>
+    // server: livereloadx
+      // TODO: remove before delivery
+       document.write('<script src="http://'
+        + (location.host || 'localhost').split(':')[0]
+        + ':35729/livereload.js?snipver=1"></' + 'script>')
+  </script>
+</body>
+</html>
